@@ -21,6 +21,10 @@ use App\Http\Controllers\CustomerServiceController;
 Route::post('/user',[AuthController::class,'store']);
 Route::post('/login',[AuthController::class,'login']);
 Route::post('/otp',[AuthController::class,'sendOTP']);
+Route::post('/verify-otp',[AuthController::class,'verifyCode']);
+Route::post('/forget-Password',[AuthController::class,'forgetPassword']);
+Route::post('/reset-Password',[AuthController::class,'resetPassword']);
+
 
 Route::get('/roomclass',[RoomClassController::class,'getRoomClasses']);
 

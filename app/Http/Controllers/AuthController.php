@@ -3,18 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Kreait\Firebase;
+use App\Mail\TestMail;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Kreait\Firebase\Factory;
+use App\Mail\OTPVerification;
 use Spatie\Permission\Models\Role;
+use Kreait\Firebase\ServiceAccount;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use Kreait\Firebase;
-use Kreait\Firebase\Factory;
-use Kreait\Firebase\ServiceAccount;
 
 
 class AuthController extends Controller
 {
+
+    protected $code;
     public function store(Request $request)
     { {
             // Validate the request data
@@ -71,6 +77,9 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['error' => 'User not found.'], 404);
         }
+        if(!isset($user->email_verified_at)){
+            return response()->json(['error' => 'You must verify your email first'], 404);
+        }
 
         // Check if the provided password matches
         if (!Hash::check($request->password, $user->password)) {
@@ -86,18 +95,110 @@ class AuthController extends Controller
         ], 200);
     }
 
-    public function sendOTP()
+
+
+    public function randGen()
     {
+        $randomInteger = mt_rand(1000, 9999);
+        return $randomInteger;
+    }
 
-        $serviceAccount = ServiceAccount::fromJsonFile(config_path('firebasesdk.php'));
+    public function verifyCode(Request $request){
+        $data = $request->All();
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'code'=>'required'
+        ]);
+        $id = json_decode($data["id"]);
+        $user = User::find($id);
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $mycode=json_decode($data['code']);
+        $user_code=json_decode($user->email_verification_code);
+        if($user_code===$mycode){
+            $user->email_verified_at=now();
+            $user->save();
+            return response()->json([
+                'message' => 'Email Verified Successfully.',
+                'user' => $user,
+            ], 200);
+        }
+        else{
+            return response()->json([
+                'message' => 'Incorrect Code Entered.',
+            ], 200);
+        }
+    }
+    public function sendOTP(Request $request)
+    {
+        $data = $request->All();
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+        ]);
 
-        $firebase = (new Factory)
-            ->withServiceAccount($serviceAccount)
-            ->create();
-        $auth = $firebase->getAuth();
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $id = json_decode($data["id"]);
+        $user = User::find($id);
+        $code=$this->randGen();
+        $this->code=$code;
+        Mail::to($user->email)->send(new TestMail($code));
+        $user->update([
+            'email_verification_code' =>$code,
+        ]);
+        return response()->json([
+            'message' => 'Code Sent Successfully.',
+            'user' => $user,
+            'code' => $this->code,
+        ], 200);
+    }
 
-        // Send verification code to the phone number
-        $phoneNumber = '+923075108200'; // Replace with the recipient phone number
-        $auth->startPhoneNumberVerification($phoneNumber);
+    public function forgetPassword(Request $request){
+        $data = $request->All();
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:users,id',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $id = json_decode($data["id"]);
+        $user = User::find($id);
+        $user->password=Hash::make($request->password);
+        $user->save();
+        return response()->json([
+            'message' => 'Password Reset Successfully.',
+        ], 200);
+    }
+
+    public function resetPassword(Request $request){
+        $data = $request->All();
+        $validator = Validator::make($request->all(), [
+            'old_password' => 'required|exists:users,id',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $id = json_decode($data["id"]);
+        $user = User::find($id);
+        if(!$user){
+            return response()->json(['message'=>'User doesnot Exists'],200);
+        }
+        if(Hash::check($request->old_password, $user->password)){
+            $user->password=Hash::make($request->password);
+            $user->save();
+        }
+        return response()->json([
+            'message' => 'Password Reset Successfully.',
+        ], 200);
     }
 }
