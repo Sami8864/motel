@@ -1,0 +1,29 @@
+# Ignore vendor directory
+/vendor
+
+# Ignore node_modules directory
+/node_modules
+
+# Ignore storage directory
+/storage/*
+
+# Ignore environment file
+.env
+
+# Ignore IDE specific files
+.idea/
+*.iml
+.vscode/
+
+# Ignore composer lock file
+composer.lock
+
+# Ignore compiled assets
+/public/css/*.css
+/public/js/*.js
+
+# Ignore logs and cache files
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
