@@ -24,6 +24,7 @@ Route::post('/otp',[AuthController::class,'sendOTP']);
 Route::post('/verify-otp',[AuthController::class,'verifyCode']);
 Route::post('/forget-Password',[AuthController::class,'forgetPassword']);
 Route::post('/reset-Password',[AuthController::class,'resetPassword']);
+Route::post('/verify-email',[AuthController::class,'verifyEmail']);
 
 
 Route::get('/roomclass',[RoomClassController::class,'getRoomClasses']);

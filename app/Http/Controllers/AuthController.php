@@ -37,27 +37,23 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Either email or ID card no is required.'], 422);
             }
 
+            $code = $this->randGen();
+            $this->code = $code;
             $user = new User([
                 'password' => Hash::make($request->password),
                 'email' => $request->email,
                 'id_no' => $request->id_no ?? NULL,
+                'email_verification_code' => $code
             ]);
             $role = Role::where('name', 'user')->get();
 
             $user->syncRoles($role);
-            // Save the user
-
-            $code = $this->randGen();
-            $this->code = $code;
-            $user->update([
-                'email_verification_code' => $code,
-            ]);
-            //Mail::to($user->email)->send(new TestMail($code));
+            Mail::to($user->email)->send(new TestMail($code));
             $user->save();
             return response()->json([
                 'message' => 'Code Sent Successfully.',
                 'user' => $user,
-                'code' => $this->code,
+                'code' => $user->email_verification_code,
             ], 200);
         }
     }
@@ -81,15 +77,15 @@ class AuthController extends Controller
 
         // Check if the user exists
         if (!$user) {
-            return response()->json(['error' => 'User not found.'], 404);
+            return response()->json(['error' => 'User not found.'], 400);
         }
         if (!isset($user->email_verified_at)) {
-            return response()->json(['error' => 'You must verify your email first'], 404);
+            return response()->json(['error' => 'You must verify your email first'], 402);
         }
 
         // Check if the provided password matches
         if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['error' => 'Invalid credentials.'], 401);
+            return response()->json(['error' => 'Invalid credentials.'], 404);
         }
         auth()->login($user); // Manually authenticate the user
         $token = $user->createToken('AuthToken')->accessToken;
@@ -116,7 +112,7 @@ class AuthController extends Controller
             'id' => 'required|exists:users,id',
             'code' => 'required'
         ]);
-        $id = json_decode($data["id"]);
+        $id = json_decode($request->id);
         $user = User::find($id);
         // Check if validation fails
         if ($validator->fails()) {
@@ -134,6 +130,24 @@ class AuthController extends Controller
         } else {
             return response()->json([
                 'message' => 'Incorrect Code Entered.',
+            ], 401);
+        }
+    }
+
+
+    public function verifyEmail(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|exists:users,email',
+        ]);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        } else {
+            return response()->json([
+                'message' => 'Email Exists',
+                'user' => User::where('email', $request->email)->first()
             ], 200);
         }
     }
