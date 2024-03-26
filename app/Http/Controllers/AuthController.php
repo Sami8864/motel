@@ -26,7 +26,7 @@ class AuthController extends Controller
             // Validate the request data
             $req =  Validator::make($request->All(), [
                 'password' => 'required|string|min:6|confirmed',
-                'id_no' => 'nullable|string|unique:users,id_no',
+                'id_no' => 'nullable|string|size:10|unique:users,id_no',
                 'email' => 'nullable|email|unique:users,email',
             ]);
             if ($req->fails()) {
@@ -41,17 +41,23 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
                 'email' => $request->email,
                 'id_no' => $request->id_no ?? NULL,
-
             ]);
             $role = Role::where('name', 'user')->get();
 
             $user->syncRoles($role);
             // Save the user
-            $user->save();
 
+            $code = $this->randGen();
+            $this->code = $code;
+            $user->update([
+                'email_verification_code' => $code,
+            ]);
+            //Mail::to($user->email)->send(new TestMail($code));
+            $user->save();
             return response()->json([
-                'message' => 'User created successfully.', 'code' => 200,
-                'user' => $user
+                'message' => 'Code Sent Successfully.',
+                'user' => $user,
+                'code' => $this->code,
             ], 200);
         }
     }
@@ -77,7 +83,7 @@ class AuthController extends Controller
         if (!$user) {
             return response()->json(['error' => 'User not found.'], 404);
         }
-        if(!isset($user->email_verified_at)){
+        if (!isset($user->email_verified_at)) {
             return response()->json(['error' => 'You must verify your email first'], 404);
         }
 
@@ -103,11 +109,12 @@ class AuthController extends Controller
         return $randomInteger;
     }
 
-    public function verifyCode(Request $request){
+    public function verifyCode(Request $request)
+    {
         $data = $request->All();
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:users,id',
-            'code'=>'required'
+            'code' => 'required'
         ]);
         $id = json_decode($data["id"]);
         $user = User::find($id);
@@ -115,17 +122,16 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-        $mycode=json_decode($data['code']);
-        $user_code=json_decode($user->email_verification_code);
-        if($user_code===$mycode){
-            $user->email_verified_at=now();
+        $mycode = json_decode($data['code']);
+        $user_code = json_decode($user->email_verification_code);
+        if ($user_code === $mycode) {
+            $user->email_verified_at = now();
             $user->save();
             return response()->json([
                 'message' => 'Email Verified Successfully.',
                 'user' => $user,
             ], 200);
-        }
-        else{
+        } else {
             return response()->json([
                 'message' => 'Incorrect Code Entered.',
             ], 200);
@@ -144,11 +150,11 @@ class AuthController extends Controller
         }
         $id = json_decode($data["id"]);
         $user = User::find($id);
-        $code=$this->randGen();
-        $this->code=$code;
+        $code = $this->randGen();
+        $this->code = $code;
         Mail::to($user->email)->send(new TestMail($code));
         $user->update([
-            'email_verification_code' =>$code,
+            'email_verification_code' => $code,
         ]);
         return response()->json([
             'message' => 'Code Sent Successfully.',
@@ -157,7 +163,8 @@ class AuthController extends Controller
         ], 200);
     }
 
-    public function forgetPassword(Request $request){
+    public function forgetPassword(Request $request)
+    {
         $data = $request->All();
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:users,id',
@@ -170,14 +177,15 @@ class AuthController extends Controller
         }
         $id = json_decode($data["id"]);
         $user = User::find($id);
-        $user->password=Hash::make($request->password);
+        $user->password = Hash::make($request->password);
         $user->save();
         return response()->json([
             'message' => 'Password Reset Successfully.',
         ], 200);
     }
 
-    public function resetPassword(Request $request){
+    public function resetPassword(Request $request)
+    {
         $data = $request->All();
         $validator = Validator::make($request->all(), [
             'old_password' => 'required|exists:users,id',
@@ -190,11 +198,11 @@ class AuthController extends Controller
         }
         $id = json_decode($data["id"]);
         $user = User::find($id);
-        if(!$user){
-            return response()->json(['message'=>'User doesnot Exists'],200);
+        if (!$user) {
+            return response()->json(['message' => 'User doesnot Exists'], 200);
         }
-        if(Hash::check($request->old_password, $user->password)){
-            $user->password=Hash::make($request->password);
+        if (Hash::check($request->old_password, $user->password)) {
+            $user->password = Hash::make($request->password);
             $user->save();
         }
         return response()->json([
