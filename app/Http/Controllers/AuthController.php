@@ -43,12 +43,13 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
                 'email' => $request->email,
                 'id_no' => $request->id_no ?? NULL,
-                'email_verification_code' => $code
+                'email_verification_code' => $code,
+                'dual_authentication'=>$request->dual_authentication ?? False
             ]);
             $role = Role::where('name', 'user')->get();
 
             $user->syncRoles($role);
-            Mail::to($user->email)->send(new TestMail($code));
+            //Mail::to($user->email)->send(new TestMail($code));
             $user->save();
             return response()->json([
                 'message' => 'Code Sent Successfully.',

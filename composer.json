@@ -11,6 +11,7 @@
         "laravel/framework": "^10.10",
         "laravel/passport": "^12.0",
         "laravel/sanctum": "^3.3",
+        "laravel/socialite": "^5.12",
         "laravel/tinker": "^2.8",
         "spatie/laravel-permission": "^6.4",
         "vonage/client": "^4.0"
