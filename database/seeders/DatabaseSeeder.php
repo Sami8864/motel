@@ -20,7 +20,9 @@ class DatabaseSeeder extends Seeder
         // ]);
         $this->call(RoleSeeder::class);
         $this->call([ImageTypeSeeder::class,]);
-        $this->call([AmenitySeeder::class,]);
+        $this->call(LoginTypeSeeder::class);
+
+        //$this->call([AmenitySeeder::class,]);
         //$this->call([RoomSEeder::class,]);
 
     }

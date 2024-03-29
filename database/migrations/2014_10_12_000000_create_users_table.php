@@ -17,8 +17,9 @@ return new class extends Migration
             $table->string('id_no')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('email_verification_code')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->boolean('dual_authentication')->nullable();
+            $table->string('type')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -19,6 +19,8 @@ use App\Http\Controllers\CustomerServiceController;
 */
 
 Route::post('/user',[AuthController::class,'store']);
+Route::post('/user-social',[AuthController::class,'socialLogin']);
+
 Route::post('/login',[AuthController::class,'login']);
 Route::post('/otp',[AuthController::class,'sendOTP']);
 Route::post('/verify-otp',[AuthController::class,'verifyCode']);

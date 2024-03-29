@@ -27,7 +27,7 @@ class AuthController extends Controller
             $req =  Validator::make($request->All(), [
                 'password' => 'required|string|min:6|confirmed',
                 'id_no' => 'nullable|string|size:10|unique:users,id_no',
-                'email' => 'nullable|email|unique:users,email',
+                'email' => 'required|email|unique:users,email',
             ]);
             if ($req->fails()) {
                 return response()->json(['errors' => $req->errors()], 422);
@@ -44,13 +44,14 @@ class AuthController extends Controller
                 'email' => $request->email,
                 'id_no' => $request->id_no ?? NULL,
                 'email_verification_code' => $code,
-                'dual_authentication'=>$request->dual_authentication ?? False
+                'dual_authentication' => $request->dual_authentication ?? False,
+                'type' => 'Email'
             ]);
             $role = Role::where('name', 'user')->get();
 
             $user->syncRoles($role);
-            //Mail::to($user->email)->send(new TestMail($code));
             $user->save();
+            Mail::to($user->email)->send(new TestMail($code));
             return response()->json([
                 'message' => 'Code Sent Successfully.',
                 'user' => $user,
@@ -223,5 +224,38 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Password Reset Successfully.',
         ], 200);
+    }
+
+    public function socialLogin(Request $request)
+    {
+        $data = $request->All();
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        // Check if validation fails
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        } else {
+            $user = User::where('email', $request->email)->first();
+            if (!isset($user)) {
+                $user = User::create([
+                    'email' => $request->email,
+                    'email_verified_at' => now(),
+                    'dual_authentication' => false,
+                    'type' => 'Google',
+                ]);
+                $role = Role::where('name', 'user')->get();
+                $user->syncRoles($role);
+                $user->save();
+            }
+            auth()->login($user); // Manually authenticate the user
+            $token = $user->createToken('AuthToken')->accessToken;
+            return response()->json([
+                'message' => 'Login successful.',
+                'user' => $user,
+                'access_token' => $token
+            ], 200);
+        }
     }
 }
