@@ -22,6 +22,16 @@ class RoomClassController extends Controller
         ], 200);
     }
 
+    public function getPromoRooms()
+    {
+        return response()->json([
+            'message' => 'Promo Rooms Fetched',
+            'code' => 200,
+            'data' =>RoomClass::take(3)->get()
+        ], 200);
+    }
+
+
     public function addRoom(Request $request)
     {
         $data = $request->All();

@@ -40,7 +40,7 @@ class CustomerServiceController extends Controller
     {
         return response()->json([
             'message' => 'Customer service fetched successfully.',
-            'services' => CustomerService::all()
+            'services' => CustomerService::take(2)->get()
         ], 200);
     }
 }

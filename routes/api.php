@@ -30,10 +30,11 @@ Route::post('/verify-email',[AuthController::class,'verifyEmail']);
 
 
 Route::get('/roomclass',[RoomClassController::class,'getRoomClasses']);
+Route::get('/promos',[RoomClassController::class,'getPromoRooms']);
 
+Route::get('services', [CustomerServiceController::class, 'load']);
 route::group(['middleware'=>'auth:api'],function(){
     Route::post('customer-services', [CustomerServiceController::class, 'store']);
-    Route::get('customer-services', [CustomerServiceController::class, 'load']);
     Route::post('/roomclass',[RoomClassController::class,'addRoom']);
     Route::post('/question',[QuestionsController::class,'store']);
 });
